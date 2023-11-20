@@ -1,0 +1,205 @@
+<html>
+
+<body>
+
+    <head>
+        <script type="text/javascript">
+
+            //JSON Formats for API Call
+            //arg1 tells the API what function to run and what to return
+
+            //Adds a computer to the database
+            var testAddComputer = {
+                "arg1": "SO_AddComputer",
+                "computerName": "Large Computer",
+                "store_id": 4,
+                "storeName": "Cool Comps",
+                "price": 1600.00,
+                "processor": "Intel i7",
+                "generation": "12th Gen Intel",
+                "memory": "8G",
+                "storage": "800G",
+                "graphicsCard": "NVIDIA GeForce RTX 4080"
+            };
+
+            //Creates a new store + login
+            var testCreateStore = {
+                "arg1": "SO_CreateStore",
+                "username": "lstshop",
+                "password": "password",
+                "storeName": "The Last Shop",
+                "longitude": "0.0002",
+                "latitude": "0.0002"
+            };
+
+            //Returns a json containing all computers in the database
+            var testGenerateInventory = {
+                "arg1": "Generate_Inventory"
+            };
+
+            //Returns a json containing all computers in the database that belong to the store with the given store_id
+            var testGenerateInventory2 = {
+                "arg1": "Generate_Inventory",
+                "store_id": 3
+            };
+
+            //Deletes the store with the given store_id from the database, as well as the corresponding login and any computers belonging to that store.
+            var testRemoveStore = {
+                "arg1": "SM_RemoveStore",
+                "store_id": 7
+            };
+
+            //Returns all the stores in the database along with the total value of their computers.
+            var testSMGetStores = {
+                "arg1": "SM_GetStores"
+            };
+
+
+            function calculateValue(js){
+                var total = 0.0;
+                for (var i = 0; i < js.length; i++) {
+                    total += js[i].Total_Price;
+                }
+                return total;
+            }
+
+            //Sends data to the database and gets response
+            function removeStoreF(e) {
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "removeStore";//------------------------------------------------------
+                console.log(selected);
+                text.value = "";
+
+                data = testRemoveStore;
+		        data["store_id"] = document.getElementById("store_id").value;//------------------------------------------
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            console.log(computation);
+                            text.value = computation;
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+
+            function genSiteMan(e){
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "getStores";//------------------------------------------------------
+                console.log(selected);
+                text.value = "";
+
+                data = testSMGetStores;//------------------------------------------
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            var body = JSON.parse(computation);
+                            console.log(body);
+                            console.log(computation);
+                            document.getElementById("totalInventoryValue").value = calculateValue(body);
+                            text.value = computation;
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+            
+
+           
+
+        </script>
+    </head>
+
+
+
+
+
+    <head>
+        <style>
+            div.fixed1 {
+                position: fixed;
+                text-align: right;
+                right: 50;
+                top: 00;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="fixed1">
+            <br><br><br><br><br><br><br>
+
+
+            <h1>Remove Store</h1>
+            
+
+            <label>Store_ID</label>
+            <input id="store_id" /><br>
+            <input type="button" value="Remove" onClick="JavaScript:removeStoreF(this)">
+        </div>
+
+    </body>
+
+
+    <head>
+        <style>
+            div.fixed2 {
+                position: fixed;
+                top: 0;
+                left: 50;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="fixed2">
+            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUIcust.html">
+                <button>Home</button>
+            </a>
+            <br><br>
+            
+            
+           
+
+            <h1>Site Manager</h1>
+            <br>
+            <label>Total Site Inventory Value</label>
+            <input id="totalInventoryValue"  disabled="true" />
+            <br>
+            <label for="store1Filter"> <input type="checkbox" id="store1Filter">Ascending
+            <label for="store2Filter"><input type="checkbox" id="store2Filter">Decending
+            
+            <br><br>
+            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genSiteMan(this)">
+            <br>
+            <textarea id="textarea"></textarea>
+        </div>
+    </body>
+
+</html>

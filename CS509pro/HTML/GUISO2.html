@@ -1,0 +1,295 @@
+<html>
+
+<body>
+
+    <head>
+        <script type="text/javascript">
+
+            //Global Variables for Page
+            var page_store_id = null;
+
+            //JSON Formats for API Call
+            //arg1 tells the API what function to run and what to return
+
+            //Adds a computer to the database
+            var testAddComputer = {
+                "arg1": "SO_AddComputer",
+                "computerName": "Large Computer",
+                "store_id": 4,
+                "storeName": "Cool Comps",
+                "price": 1600.00,
+                "processor": "Intel i7",
+                "generation": "12th Gen Intel",
+                "memory": "8G",
+                "storage": "800G",
+                "graphicsCard": "NVIDIA GeForce RTX 4080"
+            };
+
+            //Creates a new store + login
+            var testCreateStore = {
+                "arg1": "SO_CreateStore",
+                "username": "lstshop",
+                "password": "password",
+                "storeName": "The Last Shop",
+                "longitude": "0.0002",
+                "latitude": "0.0002"
+            };
+
+            //Returns a json containing all computers in the database
+            var testGenerateInventory = {
+                "arg1": "Generate_Inventory"
+            };
+
+            //Returns a json containing all computers in the database that belong to the store with the given store_id
+            var testGenerateInventory2 = {
+                "arg1": "Generate_Inventory",
+                "store_id": 3
+            };
+
+            //Deletes the store with the given store_id from the database, as well as the corresponding login and any computers belonging to that store.
+            var testRemoveStore = {
+                "arg1": "SM_RemoveStore",
+                "store_id": 7
+            };
+
+            //Returns all the stores in the database along with the total value of their computers.
+            var testSMGetStores = {
+                "arg1": "SM_GetStores"
+            };
+
+
+            //Sends data to the database and gets response
+            function genStoreInv(e) {
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "generateInv2";//------------------------------------------------------
+                text.value = "";
+                //Check to make sure a store has already been made or an id is provided.
+                if(document.getElementById("store_id").value == "" || !document.getElementById("store_id").value){
+                    text.value = "Please first create a store, or enter a store_id."
+                    return false;
+                }
+
+                data = data = testGenerateInventory2;
+                data["store_id"] = document.getElementById("store_id").value;;//------------------------------------------
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            if(!computation){//Check if no computers exist for the store
+                                text.value = "No Computers in this store."
+                                return false;
+                            }
+                            console.log(computation);
+                            text.value = computation;
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+
+
+            function addCom(e) {
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "addComp";//------------------------------------------------------
+                text.value = "";
+                //Check to make sure a store has already been made or an id is provided.
+                if(document.getElementById("store_id").value == "" || !document.getElementById("store_id").value){
+                    text.value = "Please first create a store, or enter a store_id."
+                    return false;
+                }
+
+                data = testAddComputer;
+                data["computerName"] = document.getElementById("computerName").value;
+                data["store_id"] = document.getElementById("store_id").value;
+                data["storeName"] = "";
+                data["price"] = document.getElementById("price").value;
+                data["processor"] = document.getElementById("processor").value;
+                data["generation"] = document.getElementById("generation").value;
+                data["memory"] = document.getElementById("memory").value;
+                data["storage"] = document.getElementById("storage").value;
+                data["graphicsCard"] = document.getElementById("graphics").value;//------------------------------------------
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            console.log(computation);
+                            text.value = computation;
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+
+            }
+
+            function createStoreF(e){
+				var data;
+				var text = document.getElementById("textarea");
+				var selected = "createStore";//------------------------------------------------------
+				text.value = "";
+
+                if(document.getElementById("username").value == "" || !document.getElementById("username").value || document.getElementById("password").value == "" || !document.getElementById("password").value ||
+                    document.getElementById("latitude").value == "" || !document.getElementById("latitude").value || document.getElementById("longitude").value == "" || !document.getElementById("longitude").value ||
+                    document.getElementById("storeName").value == "" || !document.getElementById("storeName").value){
+                    text.value = "Please fully fill out credentials to create a store."
+                    return false;
+                }
+       
+				data = testCreateStore;
+				data["username"] = document.getElementById("username").value;
+				data["password"] = document.getElementById("password").value;
+				data["storeName"] = document.getElementById("storeName").value;
+				data["latitude"] = document.getElementById("latitude").value;
+				data["longitude"] = document.getElementById("longitude").value;//------------------------------------------
+
+				var js = JSON.stringify(data);
+				console.log("JS:" + js);
+				var xhr = new XMLHttpRequest();
+				xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+				xhr.send(js); // send the collected data as JSON
+				xhr.onloadend = function () {
+					if (xhr.readyState == XMLHttpRequest.DONE) {
+						if (xhr.status == 200) {
+							var js = JSON.parse(xhr.responseText);
+							var computation = js["body"];
+                            if(computation == '"Failure: Username in use."'){//Check if database returned message that store could not be created because of username. Prevents overwriting page_store_id
+                                text.value = computation;
+                                return false;
+                            }
+
+                            var body = JSON.parse(computation);
+							console.log(computation);
+							text.value = computation;
+                            page_store_id = body["store_id"];
+                            console.log(page_store_id);
+                            document.getElementById("store_id").value = page_store_id;
+
+						} else if (xhr.status == 400) {
+							alert("unable to process request");
+						}
+					} else {
+						alert("not DONE");
+					}
+				};
+			}
+
+        </script>
+    </head>
+
+
+
+
+
+    <head>
+        <style>
+            div.fixed1 {
+                position: fixed;
+                text-align: right;
+                right: 50;
+                top: 00;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="fixed1">
+            <br><br><br><br><br>
+
+            <h1>Add Computer</h1>
+            <label>Computer Name:</label>
+            <input id="computerName" /><br>
+
+
+            <label>Price</label>
+            <input id="price" /><br>
+            <label>Processor</label>
+            <input id="processor" /><br>
+            <label>Generation</label>
+            <input id="generation" /><br>
+
+
+            <label>Memory</label>
+            <input id="memory" /><br>
+            <label>Storage</label>
+            <input id="storage" /><br>
+            <label>Graphics</label>
+            <input id="graphics" /><br>
+            <input type="button" value="Add" onClick="addCom(this)">
+
+
+            <br><br><br><br>
+
+            <h1>Remove Computer</h1>
+            <p>$25 Fee</p>
+
+            <label>Computer Name:</label>
+            <input id="computerName11111" />
+            <br>
+            <button>Remove</button>
+        </div>
+
+    </body>
+
+
+    <head>
+        <style>
+            div.fixed2 {
+                position: fixed;
+                top: 0;
+                left: 50;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="fixed2">
+            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUIcust.html">
+                <button>Home</button>
+            </a>
+            <br><br><br>
+            <label>Username</label>
+            <input id="username"  />
+            <label>Password</label>
+            <input id="password"  />
+            <label>Store Name</label>
+            <input id="storeName" /><br>
+            <label>Latitude</label>
+            <input id="latitude"  />
+            <label>Longitude</label>
+            <input id="longitude"/>
+            
+            <input type="button" value="Create Store" onClick="JavaScript:createStoreF(this)">
+
+            <h1>Store Owner</h1>
+            <br><br>
+            <label>store_ID</label>
+			<input id="store_id"/>
+            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genStoreInv(this)">
+            <br>
+            <textarea id="textarea"></textarea>
+        </div>
+    </body>
+
+</html>
