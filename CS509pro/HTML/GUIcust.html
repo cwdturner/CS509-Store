@@ -2,87 +2,248 @@
 
 <body>
 
-    <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISO2.html">
-    <button>Store Owner</button>
-    </a>
-
-    <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISMLog.html">
-    <button>Site Manager</button>
-    </a>
+    <head>
+        <script type="text/javascript">
 
 
 
-    <header>
-        <h1>Used Computers</h1>
-    </header>
-    
-<div>
-    <h2>Filter:</h2>
-    
-    <th>Stores:</th><label for="store1Filter"> <input type="checkbox" id="store1Filter">Store 1
-    <label for="store2Filter"><input type="checkbox" id="store2Filter">Store 2
-    <label for="store3Filter"><input type="checkbox" id="store3Filter">Store 3
-    <br>
-    <th>Price:</th><label for="price1"> <input type="checkbox" id="price1">2000+
-    <label for="price2"> <input type="checkbox" id="price2">1501 - 2000   
-    <label for="price3"> <input type="checkbox" id="price3">1001 - 1500
-    <label for="price4"> <input type="checkbox" id="price4">501 - 1000
-    <label for="price5"> <input type="checkbox" id="price5">500 and Less
-    <br>
-    <th>Ram:</th><label for="ram1"> <input type="checkbox" id="ram1">32+
-    <label for="ram2"> <input type="checkbox" id="ram2">16GB
-    <label for="ram3"> <input type="checkbox" id="ram3">8GB
-    <label for="ram4"> <input type="checkbox" id="ram4">4GB
-    <br>
-    <th>Storage:</th><label for="storage1"> <input type="checkbox" id="storage1">2TB+
-    <label for="storage2"> <input type="checkbox" id="storage2">2TB+
-    <label for="storage3"> <input type="checkbox" id="storage3">512GB
-    <label for="storage4"> <input type="checkbox" id="storage4">256 or Less
-    <br> 
-    <th>Processor:</th><label for="processor1"> <input type="checkbox" id="processor1">Intel  
-    <label for="processor2"> <input type="checkbox" id="processor2">AMD
-    <br> 
-    <th>Gen:</th><label for="gen1"> <input type="checkbox" id="gen1">13th   
-    <label for="gen2"> <input type="checkbox" id="gen2">12th
-    <label for="gen3"> <input type="checkbox" id="gen3">11th
-    <label for="gen4"> <input type="checkbox" id="gen4">AMD 7000 
-    <label for="gen5"> <input type="checkbox" id="gen5">AMD 6000 
-    <br> 
-    <th>Graphics:</th><label for="graphics1"> <input type="checkbox" id="graphics1">NVIDIA  
-    <label for="graphics2"> <input type="checkbox" id="graphics2">AMD
-    <label for="graphics3"> <input type="checkbox" id="graphics3">INTEL
+
+            //Returns a json containing all computers in the database
+            var testGenerateInventory = {
+                "arg1": "Generate_Inventory"
+            };
+
+            //Returns a json containing all computers in the database that belong to the store with the given store_id
+            var testGenerateInventory2 = {
+                "arg1": "Generate_Inventory",
+                "store_id": 3
+            };
+
+            var testGenerateCustInventory2 = {
+                "arg1": "custGenInv",
+                "store_id": 3
+            };
+
+            //Returns all the stores in the database along with the total value of their computers.
+            var testSMGetStores = {
+                "arg1": "SM_GetStores"
+            };
+
+            var testStoreList = {
+                "arg1": "store_list"
+            };
+
+            function genSiteMan(e) {
+                var data;
+                //var text = document.getElementById("textarea");
+                var text = document.getElementById("demo2");
+                var selected = "listStore";//------------------------------------------------------
+                console.log(selected);
+                text.value = "";
+
+                data = testStoreList;//------------------------------------------
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                const myJSON = JSON.stringify(text.value);
+                //document.getElementById("myText").value = text.value;
+
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            const js = JSON.parse(this.responseText);
+
+                            var computation = js["body"];
+                            var body = JSON.parse(computation);
+                            console.log(body);
+                            console.log("comp" + computation);
+
+                            text.value = computation;
+                            //document.getElementById("myText").value = text.value;  
+                            text.innerHTML = computation;
+                            // /*
+                            console.log(body[1]);
+                            let textt = "<select>"
+                            for (let x in body) {
+                                textt += "<option>" + body[x].storeName + "</option>";
+                            }
+                            textt += "</select>"
+                            document.getElementById("demo2").innerHTML = textt;
+                            //*/
+
+                        }
+                        else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+            //Sends data to the database and gets response
+            function genStoreInv(e) {
+                var data;
+                var text = document.getElementById("textarea2");
+                var selected = "generateInv2";//------------------------------------------------------
+                text.value = "";
+                //Check to make sure a store has already been made or an id is provided.
+                if (document.getElementById("store_id").value == "" || !document.getElementById("store_id").value) {
+                    text.value = "Please first create a store, or enter a store_id."
+                    return false;
+                }
+
+                data = data = testGenerateCustInventory2;
+                data["store_id"] = document.getElementById("store_id").value;;//------------------------------------------
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            if (!computation) {//Check if no computers exist for the store
+                                text.value = "No Computers in this store."
+                                return false;
+                            }
+                            console.log(computation);
+                            text.value = computation;
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+
+
+        </script>
+    </head>
+
+
+    <head>
+        <style>
+            div.fixed1 {
+                position: fixed;
+                text-align: right;
+                left: 1;
+                top: 00;
+            }
+        </style>
+    </head>
+
+
+    <head>
+        <style>
+            div.fixed2 {
+                position: fixed;
+                top: 50;
+                left: 10;
+            }
+        </style>
+    </head>
+
+    <body onload="genSiteMan()">
+
+        <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISO2.html">
+            <button>Store Owner</button>
+            </a>
+        
+            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISMLog.html">
+            <button>Site Manager</button>
+            </a>
         
         
-        <br><br><br><br>
-</div>
-    
+        
+            <header>
+                <h1>Used Computers</h1>
+            </header>
 
-Long: &nbsp; <input id="long"/> &nbsp; Lat: &nbsp; <input id="lat"/>
-    <table>
-        <tr>
-            <th>Price</th>
-            <th>Computers</th>
-        </tr>
-        <tr>
-            <td>$1200</td>
-            <td>
-                <div class="computers">
-                    <p>Speedy PC2, storeName: Store2", processor:Intel i9,"generation:13th Gen... </p>
-                </div>
-            </td>
+
+
+        <div class="fixed2">
+            </a>
+            <br><br><br><br>
+            <label>store Name </label>
+            <p style="display:inline" id="demo2"></p><br>
+            <label>price</label>
+            <select id="myselect" onchange="change_myselect(this.value)">
+                <option value="All">All</option>
+                <option value="2000+">2000+</option>
+                <option value="1501-2000">1501-2000</option>
+                <option value="1001-1500">1001-1500</option>
+                <option value="501-1000">501-1000</option>
+                <option value="500-">500-</option>
+            </select><br>
+            
+            <label>Ram</label>
+            <select id="myselect" onchange="change_myselect(this.value)">
+                <option value="All">All</option>
+                <option value="32+">32+</option>
+                <option value="16GB">16GB</option>
+                <option value="8GB">8GB</option>
+                <option value="4GB">4GB</option>
+              </select><br>
+
+              <label>Storage</label>
+              <select id="myselect" onchange="change_myselect(this.value)">
+                <option value="All">All</option>
+                <option value="2TB+">2TB+</option>
+                <option value="1TB">1TB</option>
+                <option value="512GB">512GB</option>
+                <option value="256orLess">256 or Less</option>
+              </select><br>
+
+              <label>Processor</label>
+              <select id="myselect" onchange="change_myselect(this.value)">
+                <option value="All">All</option>
+                <option value="Intel ">Intel </option>
+                <option value="AMD">AMD</option>
+              </select><br>
+
+              <label>Gen</label>
+              <select id="myselect" onchange="change_myselect(this.value)">
+                <option value="All">All</option>
+                <option value="12th">12th</option>
+                <option value="11th">11th</option>
+                <option value="AMD 7000">AMD 7000</option>
+                <option value="AMD 6000 ">AMD 6000 </option>
+              </select><br>
+
+              <label>Graphics</label>
+              <select id="myselect" onchange="change_myselect(this.value)">
+                <option value="All">All</option>
+                <option value="NVIDIA  ">NVIDIA  </option>
+                <option value="AMD">AMD</option>
+                <option value="INTEL">INTEL</option>
+              </select><br>
+            
+
+            
+            <br><br>
+            Long: &nbsp; <input id="long"/> &nbsp; Lat: &nbsp; <input id="lat"/>
+            <br><br>
+            <label>store Name</label>
+            <input id="store_id" />
+            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genStoreInv(this)">
+            <br>
+            <textarea id="textarea2"></textarea>
+            <br><br>
             <td><button>BUY</button></td>
-        </tr>
-		<tr>
-            <td>$200</td>
-            <td>
-                <div class="computers">
-                    <p>Large Computer, storeName: Store2", processor:Intel i9,"generation:11th Gen...</p>
-                </div>
-            </td>
-            <td><button>BUY</button></td>
-        </tr>	
-    </table>
-    <button>Compare</button>
+            <p id="invTable"></p>
+        </div>
+    </body>
+
 
 </body>
+
 </html>
