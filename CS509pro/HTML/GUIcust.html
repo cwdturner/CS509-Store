@@ -4,49 +4,22 @@
 
     <head>
         <script type="text/javascript">
-
-
-
-
-            //Returns a json containing all computers in the database
-            var testGenerateInventory = {
-                "arg1": "Generate_Inventory"
-            };
-
-            //Returns a json containing all computers in the database that belong to the store with the given store_id
-            var testGenerateInventory2 = {
-                "arg1": "Generate_Inventory",
-                "store_id": 3
-            };
-
-            var testGenerateCustInventory2 = {
-                "arg1": "custGenInv",
-                "store_id": 3
-            };
-
-            //Returns all the stores in the database along with the total value of their computers.
-            var testSMGetStores = {
-                "arg1": "SM_GetStores"
-            };
-
-            var testStoreList = {
-                "arg1": "store_list"
-            };
-
+            //asks for the list of stores
             function genSiteMan(e) {
                 var data;
+
                 //var text = document.getElementById("textarea");
                 var text = document.getElementById("demo2");
-                var selected = "listStore";//------------------------------------------------------
+                var selected = "listStore";
                 console.log(selected);
                 text.value = "";
 
-                data = testStoreList;//------------------------------------------
-
+                data = { "arg1": "store_list" };
+                console.log(data);
                 var js = JSON.stringify(data);
                 console.log("JS:" + js);
                 var xhr = new XMLHttpRequest();
-                const myJSON = JSON.stringify(text.value);
+                var myJSON = JSON.stringify(text.value);
                 //document.getElementById("myText").value = text.value;
 
                 xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
@@ -54,7 +27,8 @@
                 xhr.onloadend = function () {
                     if (xhr.readyState == XMLHttpRequest.DONE) {
                         if (xhr.status == 200) {
-                            const js = JSON.parse(this.responseText);
+
+                            var js = JSON.parse(this.responseText);
 
                             var computation = js["body"];
                             var body = JSON.parse(computation);
@@ -62,18 +36,18 @@
                             console.log("comp" + computation);
 
                             text.value = computation;
-                            //document.getElementById("myText").value = text.value;  
+
                             text.innerHTML = computation;
-                            // /*
                             console.log(body[1]);
-                            let textt = "<select>"
+
+                            //let textt = "<select>"
+                            let textt = "<option value= storeName >Store Name</option>";
                             for (let x in body) {
                                 textt += "<option>" + body[x].storeName + "</option>";
                             }
                             textt += "</select>"
                             document.getElementById("demo2").innerHTML = textt;
-                            //*/
-
+                            change_Storeselect(st = "storeName", pr = "price", ra = "memory", stora = "storage", gpu = "graphicsCard", cpu = "processor", gen = "generation");
                         }
                         else if (xhr.status == 400) {
                             alert("unable to process request");
@@ -84,20 +58,21 @@
                 };
             }
 
-            //Sends data to the database and gets response
-            function genStoreInv(e) {
+            //prints complist based on filters and prints buy/compare elements 
+            function change_Storeselect(store, pri, ram, sto, gpu, cpu, gen) {
+                console.log(store, pri, ram, sto, gpu, cpu, gen)
                 var data;
-                var text = document.getElementById("textarea2");
+                var text = document.getElementById("computerLog");
                 var selected = "generateInv2";//------------------------------------------------------
                 text.value = "";
                 //Check to make sure a store has already been made or an id is provided.
-                if (document.getElementById("store_id").value == "" || !document.getElementById("store_id").value) {
-                    text.value = "Please first create a store, or enter a store_id."
-                    return false;
-                }
+                /*if (document.getElementById("store_id").value == "" || !document.getElementById("store_id").value) {
+                 text.value = "Please first create a store, or enter a store_id."
+                return false;
+                }*/
 
-                data = data = testGenerateCustInventory2;
-                data["store_id"] = document.getElementById("store_id").value;;//------------------------------------------
+                data = { "arg1": "custGenInv", "store_name": store, "price": pri, "memory": ram, "storage": sto, "graphicsCard": gpu, "processor": cpu, "generation": gen };
+                //data["store_id"] = sel;
 
                 var js = JSON.stringify(data);
                 console.log("JS:" + js);
@@ -109,22 +84,57 @@
                         if (xhr.status == 200) {
                             var js = JSON.parse(xhr.responseText);
                             var computation = js["body"];
+                            console.log("testComp" + computation)
+                            ///*
                             if (!computation) {//Check if no computers exist for the store
                                 text.value = "No Computers in this store."
+                                console.log("fail")
+                                document.getElementById("computerLog").innerHTML = "No computers Found";
                                 return false;
                             }
+                            //*/
+                            var body = JSON.parse(computation);
                             console.log(computation);
                             text.value = computation;
-                        } else if (xhr.status == 400) {
+                            text.innerHTML = computation;
+
+                            let texttt = "<table>"
+                            texttt += "<tr><th>-</th><th>Name</th><th>Price</th><th>Ram</th><th>Storage</th><th>GPU</th><th>CPU</th><th>Gem</th></tr>";
+                            for (x in body) {
+                                //console.log("id"+body[x].computer_id)
+                                let a = [];
+                                a[x] = body[x].computer_id;
+                                console.log("id" + a[x])
+                                //<input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
+                                texttt += "<tr><td><input type=checkbox id=" + body[x].computer_id + "></td>";
+                                texttt += "<td>" + body[x].computerName + "</td>" + "<td> $" + body[x].price + " </td>" + "<td> " + body[x].memory + " </td>" + "<td> " + body[x].storage + " </td>" + "<td> " + body[x].graphicsCard + " </td>" + "<td> " + body[x].processor + " </td>" + "<td> " + body[x].generation + " </td>";
+                                texttt += "<td><button onclick=buyComp(" + body[x].computer_id + ")>Buy</button></td></tr>";
+
+                            }
+                            //console.log(texttt);
+                            texttt += "</table>"
+                            document.getElementById("computerLog").innerHTML = texttt;
+                        }
+
+                        else if (xhr.status == 400) {
                             alert("unable to process request");
                         }
                     } else {
                         alert("not DONE");
+                        console.log("fail2")
                     }
                 };
             }
 
+            function buyComp(comp_id) {
+                //var x = JSON.stringify(comp_id);
+                console.log("bought" + comp_id)
+            }
 
+            function compareComp(comp_id) {
+                //var x = JSON.stringify(comp_id);
+                console.log("bought" + comp_id)
+            }
 
         </script>
     </head>
@@ -133,113 +143,187 @@
     <head>
         <style>
             div.fixed1 {
-                position: fixed;
-                text-align: right;
-                left: 1;
-                top: 00;
+
+                
+                text-align: left;
+
+                
             }
         </style>
     </head>
+
 
 
     <head>
         <style>
             div.fixed2 {
-                position: fixed;
-                top: 50;
-                left: 10;
+
+
+                overflow-x: hidden;
+                overflow-y: auto;
+                text-align: center;
+                margin: auto;
+
+
             }
         </style>
     </head>
 
+    <head>
+        <style>
+            body {
+                background-image: url('https://cdn.discordapp.com/attachments/581443657383542784/1179952640264765552/201.png?ex=657ba787&is=65693287&hm=077078523307ae82fd01155ed06bfb3769d050a231fade94b7c31b3d9ef7b79e&');
+            }
+        </style>
+    </head>
+
+
+
+    <style>
+        select {
+            width: 100px;
+
+        }
+
+        option {
+            min-width: 100px;
+        }
+    </style>
+
+
+
     <body onload="genSiteMan()">
 
-        <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISO2.html">
-            <button>Store Owner</button>
+        <div class="fixed1">
+
+            <br>
+            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISO2.html">
+                <button>Store Owner</button>
             </a>
-        
+
             <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISMLog.html">
-            <button>Site Manager</button>
+                <button>Site Manager</button>
             </a>
-        
-        
-        
+        </div>
+        <div class="fixed2">
+            <br><br><br><br>
             <header>
                 <h1>Used Computers</h1>
             </header>
 
 
 
-        <div class="fixed2">
             </a>
             <br><br><br><br>
-            <label>store Name </label>
-            <p style="display:inline" id="demo2"></p><br>
-            <label>price</label>
-            <select id="myselect" onchange="change_myselect(this.value)">
-                <option value="All">All</option>
+            <!-- <select style="display:inline" id="demo2" onchange="change_Storeselect(this.value)"></select><br>  -->
+            <select style="display:inline" id="demo2"></select>
+
+            <select id="priceFilter">
+                <option value="price">Price</option>
                 <option value="2000+">2000+</option>
                 <option value="1501-2000">1501-2000</option>
                 <option value="1001-1500">1001-1500</option>
                 <option value="501-1000">501-1000</option>
                 <option value="500-">500-</option>
-            </select><br>
-            
-            <label>Ram</label>
-            <select id="myselect" onchange="change_myselect(this.value)">
-                <option value="All">All</option>
+            </select>
+
+
+            <select id="ramFilter">
+                <option value="memory">Memory</option>
                 <option value="32+">32+</option>
                 <option value="16GB">16GB</option>
                 <option value="8GB">8GB</option>
                 <option value="4GB">4GB</option>
-              </select><br>
+            </select>
 
-              <label>Storage</label>
-              <select id="myselect" onchange="change_myselect(this.value)">
-                <option value="All">All</option>
+
+            <select id="stoFilter">
+                <option value="storage">Storage</option>
                 <option value="2TB+">2TB+</option>
                 <option value="1TB">1TB</option>
                 <option value="512GB">512GB</option>
                 <option value="256orLess">256 or Less</option>
-              </select><br>
+            </select><br>
 
-              <label>Processor</label>
-              <select id="myselect" onchange="change_myselect(this.value)">
-                <option value="All">All</option>
+
+            <select id="gpuFilter">
+                <option value="graphicsCard">Graphics</option>
+                <option value="NVIDIA  ">NVIDIA </option>
+                <option value="AMD">AMD</option>
+                <option value="INTEL">INTEL</option>
+                <option value="NVIDIA GeForce RTX 4090">NVIDIA GeForce RTX 4090</option>
+                <option value="NVIDIA GeForce RTX 4080”">NVIDIA GeForce RTX 4080”</option>
+                <option value="AMD Radeon Pro W6300">AMD Radeon Pro W6300</option>
+                <option value="AMD Radeon Pro W6400">AMD Radeon Pro W6400</option>
+                <option value="Intel Integrated Graphics">Intel Integrated Graphics</option>
+                <option value="Intel UHD Graphics 730">Intel UHD Graphics 730</option>
+                <option value="Intel UHD Graphics 770">Intel UHD Graphics 770</option>
+            </select>
+
+
+            <select id="cpuFilter">
+                <option value="processor">Processor</option>
                 <option value="Intel ">Intel </option>
                 <option value="AMD">AMD</option>
-              </select><br>
+            </select>
 
-              <label>Gen</label>
-              <select id="myselect" onchange="change_myselect(this.value)">
-                <option value="All">All</option>
+
+            <select id="genFilter">
+                <option value="generation">Generation</option>
                 <option value="12th">12th</option>
                 <option value="11th">11th</option>
                 <option value="AMD 7000">AMD 7000</option>
                 <option value="AMD 6000 ">AMD 6000 </option>
-              </select><br>
+            </select>
 
-              <label>Graphics</label>
-              <select id="myselect" onchange="change_myselect(this.value)">
-                <option value="All">All</option>
-                <option value="NVIDIA  ">NVIDIA  </option>
-                <option value="AMD">AMD</option>
-                <option value="INTEL">INTEL</option>
-              </select><br>
-            
 
-            
+
+            <button
+                onclick="change_Storeselect(demo2.value,priceFilter.value,ramFilter.value,stoFilter.value,gpuFilter.value,cpuFilter.value,genFilter.value)">Filter</button><br>
             <br><br>
-            Long: &nbsp; <input id="long"/> &nbsp; Lat: &nbsp; <input id="lat"/>
-            <br><br>
-            <label>store Name</label>
-            <input id="store_id" />
-            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genStoreInv(this)">
+
+            <button onclick="compareComp(this.value)">Compare</button>
+            <p style="display:inline">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</p>
+            Long: &nbsp; <input id="long" /> &nbsp; Lat: &nbsp; <input id="lat" />
             <br>
-            <textarea id="textarea2"></textarea>
-            <br><br>
-            <td><button>BUY</button></td>
-            <p id="invTable"></p>
+
+
+
+
+
+
+            <style>
+                table,
+                td,
+                th {
+                    border: 1px solid #000000;
+                    text-align: center;
+                    background-color: rgba(255, 255, 255, 0.965);
+
+
+                }
+
+                table {
+                    border-collapse: collapse;
+                    width: 75%;
+                    a: center;
+
+                }
+
+                th,
+                td {
+                    padding: 10px;
+                }
+            </style>
+
+            <center>
+                <p id="computerLog"></p>
+            </center>
+
+
+
+
+
         </div>
     </body>
 
