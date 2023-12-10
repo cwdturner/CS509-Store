@@ -1,7 +1,4 @@
 <html>
-
-<body>
-
     <head>
         <script type="text/javascript">
 
@@ -56,22 +53,153 @@
             var testSMGetStores = {
                 "arg1": "SM_GetStores"
             };
+            //Deletes a computer given a Computer ID
+            var testSORemoveComputer = {
+                "arg1": "SO_RemoveComputer",
+                "computer_id": 1
+            };
 
+            function hideLogin(){
+                document.getElementById("login").style.display = 'none';
+                document.getElementById("div1").style.display = 'inline-block';
+                document.getElementById("div2").style.display = 'inline-block';
+            }
+
+            function selectComputers(){
+                var tabl = document.getElementById("compTable");
+                var ids = [];
+                if(!tabl){
+                    return;
+                }
+                for(var i = 1; i < tabl.rows.length; i++){
+                    if(document.getElementById("compTable").rows[i].cells[0].children[0].checked == true){
+                        ids.push(document.getElementById("compTable").rows[i].cells[0].children[0].id);
+                    }
+                }
+                console.log(ids);
+                return ids;
+            }
+
+            function editPrice(){
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "createStore";//------------------------------------------------------
+                text.value = "";
+
+                var compIDs = selectComputers();
+       
+                if(compIDs.length == 0){
+                    //No Computers Selected.
+                    return;
+                }
+
+                data = {
+                    "arg1": "SO_EditPrice",
+                    "newPrice": "",
+                    "compIDs": "",
+                };
+
+                data["newPrice"] = document.getElementById("newPrice").value;
+                data["compIDs"] = compIDs;
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+
+                            var body = JSON.parse(computation);
+                            console.log(computation);
+                            text.value = computation;
+
+                            genStoreInv();
+
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+
+            }
+
+            //Handles sending login request to the database
+            function login(){
+
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "createStore";//------------------------------------------------------
+                text.value = "";
+
+                if(document.getElementById("usernameLogin").value == "" || !document.getElementById("usernameLogin").value || document.getElementById("passwordLogin").value == "" || !document.getElementById("passwordLogin").value){
+                    text.value = "Please fully fill out credentials to create a store."
+                    return false;
+                }
+       
+                data = {
+                    "arg1": "SO_Login",
+                    "username": "",
+                    "password": "",
+                };
+
+                data["username"] = document.getElementById("usernameLogin").value;
+                data["password"] = document.getElementById("passwordLogin").value;
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+
+                            var body = JSON.parse(computation);
+                            console.log(computation);
+                            if(body["status"] == "Success"){
+                                page_store_id = body["store_id"];
+                                hideLogin();
+                            }
+                            else{
+                                document.getElementById("loginError").innerHTML = body["message"];
+                            }
+                            
+
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+
+            }
 
             //Sends data to the database and gets response
-            function genStoreInv(e) {
+            function genStoreInv() {
                 var data;
                 var text = document.getElementById("textarea");
                 var selected = "generateInv2";//------------------------------------------------------
                 text.value = "";
                 //Check to make sure a store has already been made or an id is provided.
+                /*
                 if(document.getElementById("store_id").value == "" || !document.getElementById("store_id").value){
                     text.value = "Please first create a store, or enter a store_id."
                     return false;
                 }
-
+                */
                 data = data = testGenerateInventory2;
-                data["store_id"] = document.getElementById("store_id").value;;//------------------------------------------
+                //data["store_id"] = document.getElementById("store_id").value;//------------------------------------------
+                data["store_id"] = page_store_id;
 
                 var js = JSON.stringify(data);
                 console.log("JS:" + js);
@@ -87,6 +215,24 @@
                                 text.value = "No Computers in this store."
                                 return false;
                             }
+                            var body = JSON.parse(computation);
+                            let texttt = "<table id='compTable'>";
+                            texttt += "<tr><th>-</th><th>Name</th><th>Price</th><th>Ram</th><th>Storage</th><th>GPU</th><th>CPU</th><th>Gem</th></tr>";
+                            for (x in body) {
+                                //console.log("id"+body[x].computer_id)
+                                let a = [];
+                                a[x] = body[x].computer_id;
+                                console.log("id" + a[x])
+                                //<input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
+                                texttt += "<tr><td><input type=checkbox id=" + body[x].computer_id + "></td>";
+                                texttt += "<td>" + body[x].computerName + "</td>" + "<td> $" + body[x].price + " </td>" + "<td> " + body[x].memory + " </td>" + "<td> " + body[x].storage + " </td>" + "<td> " + body[x].graphicsCard + " </td>" + "<td> " + body[x].processor + " </td>" + "<td> " + body[x].generation + " </td>";
+                                texttt += "<td><button onclick=removeComp(" + body[x].computer_id + ")>Remove</button></td></tr>";
+
+                            }
+                            //console.log(texttt);
+                            texttt += "</table>"
+                            document.getElementById("computerLog").innerHTML = texttt;
+
                             console.log(computation);
                             text.value = computation;
                         } else if (xhr.status == 400) {
@@ -98,29 +244,20 @@
                 };
             }
 
-
-
-            function addCom(e) {
+            //Remove Computer
+            function removeComp(e) {
                 var data;
                 var text = document.getElementById("textarea");
-                var selected = "addComp";//------------------------------------------------------
                 text.value = "";
                 //Check to make sure a store has already been made or an id is provided.
+                /*
                 if(document.getElementById("store_id").value == "" || !document.getElementById("store_id").value){
                     text.value = "Please first create a store, or enter a store_id."
                     return false;
-                }
+                }*/
 
-                data = testAddComputer;
-                data["computerName"] = document.getElementById("computerName").value;
-                data["store_id"] = document.getElementById("store_id").value;
-                data["storeName"] = "";
-                data["price"] = document.getElementById("price").value;
-                data["processor"] = document.getElementById("processor").value;
-                data["generation"] = document.getElementById("generation").value;
-                data["memory"] = document.getElementById("memory").value;
-                data["storage"] = document.getElementById("storage").value;
-                data["graphicsCard"] = document.getElementById("graphics").value;//------------------------------------------
+                data = testSORemoveComputer;
+                data["computer_id"] = e;
 
                 var js = JSON.stringify(data);
                 console.log("JS:" + js);
@@ -134,6 +271,54 @@
                             var computation = js["body"];
                             console.log(computation);
                             text.value = computation;
+                            genStoreInv();
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+
+            function addCom(e) {
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "addComp";//------------------------------------------------------
+                text.value = "";
+
+                data = testAddComputer;
+                data["computerName"] = document.getElementById("computerName").value;
+                data["store_id"] = page_store_id;
+                data["storeName"] = "";
+                data["price"] = document.getElementById("price").value;
+                data["processor"] = document.getElementById("processorSelect").value;
+                data["generation"] = document.getElementById("generationSelect").value;
+                data["memory"] = document.getElementById("memorySelect").value;
+                data["storage"] = document.getElementById("storageSelect").value;
+                data["graphicsCard"] = document.getElementById("graphicsSelect").value;//------------------------------------------
+
+                //Check to make sure all needed data inputs are filled.
+                if(data["computerName"] == "" || data["price"] == "" || !data["price"] || data["processor"] == "" || data["generation"] == "" || data["memory"] == "" || data["storage"] == "" ||
+                    data["graphicsCard"] == ""){
+                    document.getElementById("addCompError").innerHTML = "Please fill out the needed information beforing adding a computer.";
+                    return;
+                }
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            console.log(computation);
+                            text.value = computation;
+                            genStoreInv();
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
                         }
@@ -145,79 +330,147 @@
             }
 
             function createStoreF(e){
-				var data;
-				var text = document.getElementById("textarea");
-				var selected = "createStore";//------------------------------------------------------
-				text.value = "";
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "createStore";//------------------------------------------------------
+                text.value = "";
 
-                if(document.getElementById("username").value == "" || !document.getElementById("username").value || document.getElementById("password").value == "" || !document.getElementById("password").value ||
-                    document.getElementById("latitude").value == "" || !document.getElementById("latitude").value || document.getElementById("longitude").value == "" || !document.getElementById("longitude").value ||
-                    document.getElementById("storeName").value == "" || !document.getElementById("storeName").value){
+                if(document.getElementById("usernameCreate").value == "" || !document.getElementById("usernameCreate").value || document.getElementById("passwordCreate").value == "" || !document.getElementById("passwordCreate").value ||
+                    document.getElementById("latitudeCreate").value == "" || !document.getElementById("latitudeCreate").value || document.getElementById("longitudeCreate").value == "" || !document.getElementById("longitudeCreate").value ||
+                    document.getElementById("storeNameCreate").value == "" || !document.getElementById("storeNameCreate").value){
                     text.value = "Please fully fill out credentials to create a store."
                     return false;
                 }
        
-				data = testCreateStore;
-				data["username"] = document.getElementById("username").value;
-				data["password"] = document.getElementById("password").value;
-				data["storeName"] = document.getElementById("storeName").value;
-				data["latitude"] = document.getElementById("latitude").value;
-				data["longitude"] = document.getElementById("longitude").value;//------------------------------------------
+                data = testCreateStore;
+                data["username"] = document.getElementById("usernameCreate").value;
+                data["password"] = document.getElementById("passwordCreate").value;
+                data["storeName"] = document.getElementById("storeNameCreate").value;
+                data["latitude"] = document.getElementById("latitudeCreate").value;
+                data["longitude"] = document.getElementById("longitudeCreate").value;//------------------------------------------
 
-				var js = JSON.stringify(data);
-				console.log("JS:" + js);
-				var xhr = new XMLHttpRequest();
-				xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
-				xhr.send(js); // send the collected data as JSON
-				xhr.onloadend = function () {
-					if (xhr.readyState == XMLHttpRequest.DONE) {
-						if (xhr.status == 200) {
-							var js = JSON.parse(xhr.responseText);
-							var computation = js["body"];
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
                             if(computation == '"Failure: Username in use."'){//Check if database returned message that store could not be created because of username. Prevents overwriting page_store_id
-                                text.value = computation;
+                                document.getElementById("CreateError").innerHTML = computation;
                                 return false;
                             }
 
                             var body = JSON.parse(computation);
-							console.log(computation);
-							text.value = computation;
+                            console.log(computation);
+                            text.value = computation;
                             page_store_id = body["store_id"];
-                            console.log(page_store_id);
-                            document.getElementById("store_id").value = page_store_id;
+                            hideLogin();
 
-						} else if (xhr.status == 400) {
-							alert("unable to process request");
-						}
-					} else {
-						alert("not DONE");
-					}
-				};
-			}
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
 
         </script>
-    </head>
 
-
-
-
-
-    <head>
         <style>
             div.fixed1 {
                 position: fixed;
                 text-align: right;
                 right: 50;
                 top: 00;
+                display: none;
             }
+
+            div.fixed2 {
+                position: absolute;
+                left: 50px;
+                top: 50px;
+                width: 60%;
+                display: none;
+            }
+            div.login {
+                position: relative;
+                text-align: center;
+                width: 50%;
+                left: 25%;
+                top: 10%;
+                display:;
+            }
+
+            table,
+                td,
+                th {
+                    border: 1px solid #000000;
+                    text-align: center;
+                    background-color: rgba(255, 255, 255, 0.965);
+
+
+                }
+
+                table {
+                    border-collapse: collapse;
+                    width: 75%;
+                    a: center;
+
+                }
+
+                th,
+                td {
+                    padding: 10px;
+                }
+
+                body {
+                background-image: url('https://cdn.discordapp.com/attachments/581443657383542784/1179952640264765552/201.png?ex=657ba787&is=65693287&hm=077078523307ae82fd01155ed06bfb3769d050a231fade94b7c31b3d9ef7b79e&');
+                }
+                
         </style>
+
     </head>
 
     <body>
-        <div class="fixed1">
+        <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUIcust.html">
+                <button>Home</button>
+            </a>
+        <div class="login" id="login">
+            <h1>Log In</h1>
+            <label id="loginError" style="color:red;"></label><br>
+            <label>Username</label>
+            <input id="usernameLogin"  />
+            <label>Password</label>
+            <input id="passwordLogin"  />
+            <input type="button" value="Log In" onClick="login()">
+            <br><br><br><br>
+            <h3>----OR----</h3>
+            <br>
+            <h1>Create Store Account</h1>
+            <label id="CreateError" style="color:red;"></label><br>
+            <label>Username</label>
+            <input id="usernameCreate"  />
+            <label>Password</label>
+            <input id="passwordCreate"  />
+            <label>Store Name</label>
+            <input id="storeNameCreate" /><br>
+            <label>Latitude</label>
+            <input id="latitudeCreate"  />
+            <label>Longitude</label>
+            <input id="longitudeCreate"/>
+            <input type="button" value="Submit" onClick="JavaScript:createStoreF(this)">
+
+        </div>
+        <div class="fixed1" id="div1">
             <br><br><br><br><br>
 
             <h1>Add Computer</h1>
+            <p id="addCompError"></p>
             <label>Computer Name:</label>
             <input id="computerName" /><br>
 
@@ -225,49 +478,80 @@
             <label>Price</label>
             <input id="price" /><br>
             <label>Processor</label>
-            <input id="processor" /><br>
+            <select id="processorSelect">
+                <option value="">Processor</option>
+                <option value="Intel Xeon">Intel Xeon</option>
+                <option value="Intel i9">Intel i9</option>
+                <option value="Intel i7">Intel i7</option>
+                <option value="AMD Ryzen 9">AMD Ryzen 9</option>
+                <option value="AMD Ryzen 7">AMD Ryzen 7</option>
+            </select><br>
+
             <label>Generation</label>
-            <input id="generation" /><br>
+            <select id="generationSelect">
+                <option value="">Generation</option>
+                <option value="13th Gen Intel">13th Gen Intel</option>
+                <option value="12th Gen Intel">12th Gen Intel</option>
+                <option value="11th Gen Intel">11th Gen Intel</option>
+                <option value="AMD Ryzen 7000 Series">AMD Ryzen 7000 Series</option>
+                <option value="AMD Ryzen 6000 Series">AMD Ryzen 6000 Series</option>
+            </select><br>
 
 
             <label>Memory</label>
-            <input id="memory" /><br>
+            <select id="memorySelect">
+                <option value="">Memory</option>
+                <option value="32GB">32GB</option>
+                <option value="16GB">16GB</option>
+                <option value="12GB">16GB</option>
+                <option value="8GB">8GB</option>
+                <option value="4GB">4GB</option>
+                <option value="1GB">1GB</option>
+            </select><br>
+
             <label>Storage</label>
-            <input id="storage" /><br>
+            <select id="storageSelect">
+                <option value="">Storage</option>
+                <option value="2TB">2TB+</option>
+                <option value="1TB">1TB</option>
+                <option value="512GB">512GB</option>
+                <option value="256GB">256GB</option>
+                <option value="128GB">128GB</option>
+            </select><br>
+
             <label>Graphics</label>
-            <input id="graphics" /><br>
+            <select id="graphicsSelect">
+                <option value="">Graphics</option>
+                <option value="NVIDIA GeForce RTX 4090">NVIDIA GeForce RTX 4090</option>
+                <option value="NVIDIA GeForce RTX 4080”">NVIDIA GeForce RTX 4080”</option>
+                <option value="AMD Radeon Pro W6300">AMD Radeon Pro W6300</option>
+                <option value="AMD Radeon Pro W6400">AMD Radeon Pro W6400</option>
+                <option value="Intel Integrated Graphics">Intel Integrated Graphics</option>
+                <option value="Intel UHD Graphics 730">Intel UHD Graphics 730</option>
+                <option value="Intel UHD Graphics 770">Intel UHD Graphics 770</option>
+            </select><br>
+
             <input type="button" value="Add" onClick="addCom(this)">
 
 
             <br><br><br><br>
 
             <h1>Remove Computer</h1>
-            <p>$25 Fee</p>
+            <p>Removing a computer from your inventory incurs a $25 Fee.</p>
 
-            <label>Computer Name:</label>
-            <input id="computerName11111" />
+            <br><br><br><br>
+
+            <h1>Edit Computer Price</h1>
+            <p>Edit the price of selected computers.</p>
+
+            <label>New Price:</label>
+            <input id="newPrice" />
             <br>
-            <button>Remove</button>
+            <button onClick="editPrice()">Submit</button>
         </div>
 
-    </body>
-
-
-    <head>
-        <style>
-            div.fixed2 {
-                position: fixed;
-                top: 0;
-                left: 50;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="fixed2">
-            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUIcust.html">
-                <button>Home</button>
-            </a>
+        <div class="fixed2" id="div2">
+            <!--
             <br><br><br>
             <label>Username</label>
             <input id="username"  />
@@ -281,14 +565,20 @@
             <input id="longitude"/>
             
             <input type="button" value="Create Store" onClick="JavaScript:createStoreF(this)">
-
+            -->
             <h1>Store Owner</h1>
-            <br><br>
-            <label>store_ID</label>
-			<input id="store_id"/>
-            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genStoreInv(this)">
             <br>
-            <textarea id="textarea"></textarea>
+            <!--
+            <label>store_ID</label>
+            <input id="store_id"/>
+            -->
+            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genStoreInv()">
+            <br>
+            <textarea id="textarea" hidden=true></textarea>
+
+            <center>
+                <p id="computerLog"></p>
+            </center>
         </div>
     </body>
 
