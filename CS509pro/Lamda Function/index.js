@@ -9,18 +9,25 @@ password: db_access.config.password,
 database: db_access.config.database
 });
 
-let GetStoresAndInventoryAmount = () => {
+let GetStoresAndInventoryAmount = (sort) => {
+	var n;
+	if(sort=="ASC")
+		n = "SELECT Stores.storeName, Stores.store_id, latitude, longitude, balance, COALESCE(SUM(price), 0) as 'Total_Price' From Stores left join Computers on Stores.store_id = Computers.store_id GROUP BY Stores.storeName ORDER BY Total_Price ASC"
+	else if(sort=="DESC")
+		n = "SELECT Stores.storeName, Stores.store_id, latitude, longitude, balance, COALESCE(SUM(price), 0) as 'Total_Price' From Stores left join Computers on Stores.store_id = Computers.store_id GROUP BY Stores.storeName ORDER BY Total_Price DESC"
+	else
+		n = "SELECT Stores.storeName, Stores.store_id, latitude, longitude, balance, COALESCE(SUM(price), 0) as 'Total_Price' From Stores left join Computers on Stores.store_id = Computers.store_id GROUP BY Stores.storeName ORDER BY Stores.storeName"
 
-return new Promise((resolve, reject) => {
-pool.query("SELECT Stores.storeName, Stores.store_id, latitude, longitude, balance, COALESCE(SUM(price), 0) as 'Total_Price' From Stores left join Computers on Stores.store_id = Computers.store_id GROUP BY Stores.storeName ORDER BY Stores.storeName", (error, rows) => {
-if (error) { return reject(error); }
-if ((rows) && rows.length > 0) {
-	return resolve(rows);
-} else {
-	return reject("No Results Returned.");
-}
-});
-});
+	return new Promise((resolve, reject) => {
+		pool.query(n, (error, rows) => {
+			if (error) { return reject(error); }
+			if ((rows) && rows.length > 0) {
+				return resolve(rows);
+			} else {
+				return reject("No Results Returned.");
+			}
+		});
+	});
 }
 
 let removeStore = (value) => {
@@ -71,7 +78,23 @@ let createStore = (username_val, password_val, storeName_val, longitude_val, lat
 
 let logInStore = (username_val, password_val) => {
 	return new Promise((resolve, reject) => {
-	pool.query("SELECT * FROM Logins WHERE username = ? AND password = ?", [username_val, password_val], (error, rows) => {
+	pool.query("SELECT * FROM Logins WHERE username = ? AND password = ? AND site_manager = 0;", [username_val, password_val], (error, rows) => {
+		if (error) { return reject(error); }
+		if((rows) && rows.length > 0){
+			var final = {"status": "Success","store_id": rows[0].store_id};
+			return resolve(final);
+		}
+		else{
+			var final = {"status": "Failure","message": "Incorrect Login Information Given."};
+			return resolve(final);
+		}
+	});
+	});
+}
+
+let logInSitemanager = (username_val, password_val) => {
+	return new Promise((resolve, reject) => {
+	pool.query("SELECT * FROM Logins WHERE username = ? AND password = ? AND site_manager = 1;", [username_val, password_val], (error, rows) => {
 		if (error) { return reject(error); }
 		if((rows) && rows.length > 0){
 			var final = {"status": "Success","store_id": rows[0].store_id};
@@ -224,7 +247,97 @@ if ((rows) && rows.length > 0) {
 });
 }
 
+let SO_GetBalance = (storeID) => {
 
+	return new Promise((resolve, reject) => {
+		pool.query("SELECT balance FROM Stores WHERE store_id = ?", [storeID], (error, rows) => {
+			if (error) { return reject(error); }
+			if ((rows) && rows.length > 0) {
+				return resolve(rows);
+			} else {
+				return reject("0");
+			}
+		});
+	});
+}
+
+//Found at https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+let calculateShipping = (storeLat, storeLong, buyerLat, buyerLong) => {
+	var radius = 6371;
+	var dLat = (buyerLat - storeLat) * (Math.PI/180);
+	var dLong = (buyerLong - storeLong) * (Math.PI/180);
+
+	var a = Math.sin(dLat/2) * Math.sin(dLat/2) + 
+		Math.cos((storeLat) * (Math.PI/180)) * Math.cos((buyerLat) * (Math.PI/180)) * 
+		Math.sin(dLong/2) * Math.sin(dLong/2);
+
+	var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+	var d = radius * c;
+	var shipping = d * 0.621371; //Distance in miles
+	return shipping;
+}
+    
+let buy_computer = (comp_id, buyer_lat, buyer_long) => {
+	return new Promise((resolve, reject) => {
+		pool.query("Select Computers.computerName, Computers.price, Computers.store_id, Stores.latitude, Stores.longitude From Computers Inner Join Stores ON Computers.store_id = Stores.store_id Where Computers.computer_id = ?;", [comp_id], (error, rows) => {//Check computer is available.
+			if (error){
+				return reject(error);
+			}
+			if(rows && rows.length > 0){
+				var storeID = rows[0].store_id;//Get store ID
+				var compName = rows[0].computerName;
+				var compPrice = rows[0].price;
+				var storeLat = rows[0].latitude;
+				var storeLong = rows[0].longitude;
+				var shipping = calculateShipping(storeLat, storeLong, buyer_lat, buyer_long);
+				shipping = Math.round(shipping*100)/100;
+				var total = shipping + compPrice;
+				var storeCut = total * 0.95;
+				var siteCut = total *0.05;
+				return resolve(new Promise((resolve, reject) => {
+					pool.query("DELETE FROM Computers WHERE computer_id = ?", [comp_id], (error, rows) => {
+						if (error){
+							return reject(error);
+						}
+						if(rows && rows.affectedRows > 0){//Computer Removed
+								return resolve(new Promise((resolve,reject) => {
+								pool.query("UPDATE Stores SET balance = balance + ? WHERE store_id = ?", [storeCut, storeID], (error, rows) => {
+								if(error){
+									return reject(error);
+								}
+								if(rows && rows.affectedRows > 0){//Store balance Updated
+									return resolve(new Promise((resolve,reject) => {
+										pool.query("UPDATE SiteManager SET sm_balance = sm_balance + ? WHERE sm_id = 1", [siteCut], (error, rows) => {
+										if(error){
+											return reject(error);
+										}
+										if(rows && rows.affectedRows > 0){//SiteManager balance Updated
+											return resolve({"computerName": compName, "price": compPrice, "shipping": shipping, "totalPrice": total});
+										}
+										else{
+											return reject("");
+										}
+										});
+									}));
+								}
+								else{
+									return reject("");
+								}
+								});
+							}));
+						}
+						else{
+							return reject("Computer no longer available.");
+						}
+					});
+				}));
+			}
+			else {
+				return reject("Computer no longer available.")
+			}
+		});
+	});
+}    
 
 //gen a list of stores for the cust
 let store_list = () => {
@@ -257,10 +370,24 @@ let custGenInv = (store_name,pri,ram,sto,gpu,cpu,gen) => {
 		else var storeSql ="?";
 		//--------------------------------
 		if (ram=="memory"){
-			var ramSql ="??";
+			var ramSql ="(memory = memory)";
 			
 		}
-		else var ramSql ="?";
+		else if(ram=="32+"){
+			var ramSql ="(memory = \"32GB\")";
+			
+		}
+			else if(ram=="16GB"){
+			var ramSql ="(memory = \"16GB\")";
+		}
+			else if(ram=="8GB"){
+			var ramSql ="(memory = \"8GB\")";
+		}
+			else if(ram=="4GB"){
+			var ramSql ="(memory = \"4GB\" or memory = \"1GB\")";
+		}
+		
+		
 		//---------------------------------
 		if(pri=="price"){
 			var be1 = -1;
@@ -338,6 +465,26 @@ let custGenInv = (store_name,pri,ram,sto,gpu,cpu,gen) => {
 			var gpuSql ="(graphicsCard = \"Intel UHD Graphics 770\")";
 		}
 		else var gpuSql ="(graphicsCard = graphicsCard)";
+		//-------------------------------------------------------------------------------------
+		if(cpu=="processor"){
+			var cpuSql="processor = processor";
+		}
+		else if(cpu=="AMD"){
+			var cpuSql="(processor = \"AMD Ryzen 9\" or processor = \"AMD Ryzen 7\")";
+		}
+		else if(cpu=="Intel"){
+			var cpuSql="(processor = \"Intel Xeon\" or processor = \"Intel i9\" or processor = \"Intel i7\")";
+		}
+		//---------------------------------------------------------------------
+		if(gen=="generation"){
+			var genSql="generation = generation";
+		}
+		else if(gen=="generation"){
+			var genSql="generation = generation";
+		}
+		else{
+			var genSql="generation = \""+gen+"\"";
+		}
 		
 		
 		//var test = "="
@@ -345,7 +492,7 @@ let custGenInv = (store_name,pri,ram,sto,gpu,cpu,gen) => {
 		//pool.query("SELECT * FROM Computers WHERE memory = "+ramSql+" ORDER BY memory", [ram], (error, rows) => {              AND graphicsCard = "+gpuSql+"
 		
 		//pool.query("SELECT * FROM Computers WHERE storeName = "+storeSql+" AND memory = "+ramSql+" AND price between ? AND ? AND storage = "+storageSql+" AND graphicsCard = "+gpuSql+" ORDER BY storeName", [store_name,ram,be1,be2,sto,gpu], (error, rows) => {
-		pool.query("SELECT * FROM Computers WHERE (storeName = "+storeSql+" AND memory = "+ramSql+" AND price between ? AND ? AND storage = "+storageSql+") AND "+gpuSql+" ORDER BY storeName", [store_name,ram,be1,be2,sto], (error, rows) => {
+		pool.query("SELECT * FROM Computers WHERE (storeName = "+storeSql+" AND "+ramSql+" AND price between ? AND ? AND storage = "+storageSql+") AND "+gpuSql+" AND "+cpuSql+" AND "+genSql+" ORDER BY storeName", [store_name,be1,be2,sto], (error, rows) => {
 	
 			if (error) { return reject(error); }
 			if((rows) && rows.length > 0){
@@ -378,7 +525,7 @@ let custGenInv = (store_name,pri,ram,sto,gpu,cpu,gen) => {
 var result;
 switch(event.arg1){
 	case 'SM_GetStores':
-		result = await GetStoresAndInventoryAmount();
+		result = await GetStoresAndInventoryAmount(event.sort);
 	break;
 
 	case 'SM_RemoveStore':
@@ -421,8 +568,20 @@ switch(event.arg1){
 		result = await logInStore(event.username, event.password);
 	break;
 	
+	case 'SM_Login':
+		result = await logInSitemanager(event.username, event.password);
+	break;
+	
 	case 'SO_EditPrice':
 		result = await editCompPrice(event.newPrice, event.compIDs);
+	break;
+	
+	case 'BuyComputer':
+		result = await buy_computer(event.comp_id, event.buyerLat, event.buyerLong);
+	break;
+	
+	case 'SO_GetBalance':
+		result = await SO_GetBalance(event.storeID);
 	break;
 	
 	case 'custGenInv':

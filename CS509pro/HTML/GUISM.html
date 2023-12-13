@@ -51,16 +51,111 @@
 
             //Returns all the stores in the database along with the total value of their computers.
             var testSMGetStores = {
-                "arg1": "SM_GetStores"
+                "arg1": "SM_GetStores",
+                "sort": ""
             };
 
+            var test_SM_Balance = {
+                "arg1": "SM_GetBalance"
+            };
 
+            var site_Balance = {
+                "arg1": "SM_Balance"
+            };
+
+            //Hides the login screen once the user has logged in
+            function hideLogin(){
+                document.getElementById("login").style.display = 'none';
+                document.getElementById("div1").style.display = 'inline-block';
+            }
+
+            //Sends login information to the database.
+            function login(){
+
+                var data;
+                if(document.getElementById("usernameLogin").value == "" || !document.getElementById("usernameLogin").value || document.getElementById("passwordLogin").value == "" || !document.getElementById("passwordLogin").value){
+                    text.value = "Please fully fill out credentials to create a store."
+                    return false;
+                }
+       
+                data = {
+                    "arg1": "SM_Login",
+                    "username": "",
+                    "password": "",
+                };
+
+                data["username"] = document.getElementById("usernameLogin").value;
+                data["password"] = document.getElementById("passwordLogin").value;
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+
+                            var body = JSON.parse(computation);
+                            console.log(computation);
+                            if(body["status"] == "Success"){
+                                hideLogin();
+                            }
+                            else{
+                                document.getElementById("loginError").innerHTML = body["message"];
+                            }
+                            
+
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+
+            }
+
+            //Handles changing the Ascending & Descending checkboxes
+            function changeFilter(e){
+                if(e == 0){
+                    document.getElementById("store2Filter").checked = 0;
+                }
+                else if(e == 1){
+                    document.getElementById("store1Filter").checked = 0;
+                }
+            }
+
+            //Returns which sorting filter is selected
+            function getFilter(){
+                var n = "";
+                if(document.getElementById("store1Filter").checked == 1){
+                    n = "ASC";
+                }
+                else if(document.getElementById("store2Filter").checked == 1){
+                    n = "DESC";
+                }
+                return n;
+            }
+
+            //Calculates the total value of all inventory on the site
             function calculateValue(js){
                 var total = 0.0;
                 for (var i = 0; i < js.length; i++) {
                     total += js[i].Total_Price;
                 }
                 return total;
+            }
+
+            //Deprecated - We are displaying the information in a table now isntead of a text area.
+            function generateList(js_obj){
+                var endString = "";
+                for(var i = 0; i<js_obj.length; i++){
+                    endString += ("Store Name: " + js_obj[i].storeName + ", Total Inventory Value: " + js_obj[i].Total_Price + ", Store Balance: " + js_obj[i].balance + ", Latitude: " + js_obj[i].latitude + ", Longitude: " + js_obj[i].longitude + " \n");
+                }
+                return endString;
             }
 
             //Sends data to the database and gets response
@@ -72,7 +167,7 @@
                 text.value = "";
 
                 data = testRemoveStore;
-		        data["store_id"] = document.getElementById("store_id").value;//------------------------------------------
+		        data["store_id"] = e;//------------------------------------------
 
                 var js = JSON.stringify(data);
                 console.log("JS:" + js);
@@ -86,6 +181,8 @@
                             var computation = js["body"];
                             console.log(computation);
                             text.value = computation;
+
+                            genSiteMan();
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
                         }
@@ -95,15 +192,11 @@
                 };
             }
 
-
-            function genSiteMan(e){
+            //Returns the sitemanager's balance
+            function siteBalance(){
                 var data;
-                var text = document.getElementById("textarea");
-                var selected = "getStores";//------------------------------------------------------
-                console.log(selected);
-                text.value = "";
 
-                data = testSMGetStores;//------------------------------------------
+                data = site_Balance;//------------------------------------------
 
                 var js = JSON.stringify(data);
                 console.log("JS:" + js);
@@ -118,8 +211,7 @@
                             var body = JSON.parse(computation);
                             console.log(body);
                             console.log(computation);
-                            document.getElementById("totalInventoryValue").value = calculateValue(body);
-                            text.value = computation;
+                            document.getElementById("siteBalance").value = body[0].sm_balance;
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
                         }
@@ -129,59 +221,155 @@
                 };
             }
 
+            //Gets the stores and their inventory from the database, and puts them into a table.
+            function genSiteMan(){
+                var data;
+                var text = document.getElementById("textarea");
+                var selected = "getStores";//------------------------------------------------------
+                console.log(selected);
+                text.value = "";
+
+                data = testSMGetStores;//------------------------------------------
+                data["sort"] = getFilter();
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            var body = JSON.parse(computation);
+                            document.getElementById("totalInventoryValue").value = calculateValue(body);
+
+                            siteBalance();
+                            let texttt = "<table id='storeTable'>";
+                            texttt += "<tr><th>Store Name</th><th>Total Inventory Value</th><th>Store Balance</th><th>Latitude</th><th>Longitude</th></tr>";
+                            for (x in body) {
+                                let a = [];
+                                a[x] = body[x].computer_id;
+                                texttt += "<td>" + body[x].storeName + "</td>" + "<td> $" + body[x].Total_Price + " </td>" + "<td> " + body[x].balance + " </td>" + "<td> " + body[x].latitude + " </td>" + "<td> " + body[x].longitude + " </td>";
+                                texttt += "<td><button onclick=removeStoreF(" + body[x].store_id + ")>Remove</button></td></tr>";
+                            }
+                            texttt += "</table>"
+                            document.getElementById("storeLog").innerHTML = texttt;
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+
+            function SM_Balance(e){
+                var data;
+                var text = document.getElementById("storebaltextarea");
+                var selected = "getStores";//------------------------------------------------------
+                console.log(selected);
+                text.value = "";
+
+                data = test_SM_Balance;//------------------------------------------
+               
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            var body = JSON.parse(computation);
+                            console.log(body);
+                            console.log(computation);
+                            document.getElementById("storebaltextarea").value = computation;
+                            
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+            }
+
+
             
 
            
 
         </script>
-    </head>
 
+         <style>
 
-
-
-
-    <head>
-        <style>
-            div.fixed1 {
-                position: fixed;
-                text-align: right;
-                right: 50;
-                top: 00;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="fixed1">
-            <br><br><br><br><br><br><br>
-
-
-            <h1>Remove Store</h1>
-            
-
-            <label>Store_ID</label>
-            <input id="store_id" /><br>
-            <input type="button" value="Remove" onClick="JavaScript:removeStoreF(this)">
-        </div>
-
-    </body>
-
-
-    <head>
-        <style>
             div.fixed2 {
-                position: fixed;
-                top: 0;
-                left: 50;
+                position: absolute;
+                left: 50px;
+                top: 50px;
+                width: 60%;
+                display: none;
             }
+            div.login {
+                position: relative;
+                text-align: center;
+                width: 50%;
+                left: 25%;
+                top: 10%;
+                display:;
+            }
+
+            table,
+                td,
+                th {
+                    border: 1px solid #000000;
+                    text-align: center;
+                    background-color: rgba(255, 255, 255, 0.965);
+
+
+                }
+
+                table {
+                    border-collapse: collapse;
+                    width: 75%;
+                    a: center;
+
+                }
+
+                th,
+                td {
+                    padding: 10px;
+                }
+
+                body {
+                background-image: url('https://cdn.discordapp.com/attachments/581443657383542784/1179952640264765552/201.png?ex=657ba787&is=65693287&hm=077078523307ae82fd01155ed06bfb3769d050a231fade94b7c31b3d9ef7b79e&');
+                }
+                
         </style>
     </head>
 
+
     <body>
-        <div class="fixed2">
-            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUIcust.html">
+        <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUIcust.html">
                 <button>Home</button>
             </a>
+        <div class="login" id="login">
+            <h1>Log In</h1>
+            <label id="loginError" style="color:red;"></label><br>
+            <label>Username</label>
+            <input id="usernameLogin"  />
+            <label>Password</label>
+            <input id="passwordLogin"  />
+            <input type="button" value="Log In" onClick="login()">
+        </div>
+        <div class="fixed2" id="div1">
+            
             <br><br>
             
             
@@ -192,13 +380,22 @@
             <label>Total Site Inventory Value</label>
             <input id="totalInventoryValue"  disabled="true" />
             <br>
-            <label for="store1Filter"> <input type="checkbox" id="store1Filter">Ascending
-            <label for="store2Filter"><input type="checkbox" id="store2Filter">Decending
+            <label>Site Balance</label>
+            <input id="siteBalance"  disabled="true" />
+            <br>
+
+            
+            <label for="store1Filter"> <input type="checkbox" id="store1Filter" onClick="changeFilter(0)">Ascending</label>
+            <label for="store2Filter"><input type="checkbox" id="store2Filter" onClick="changeFilter(1)">Decending</label>
             
             <br><br>
-            <input type="button" value="Genorate Store Inv" onClick="JavaScript:genSiteMan(this)">
+            <input type="button" value="Generate Store Inv" onClick="JavaScript:genSiteMan()">
             <br>
-            <textarea id="textarea"></textarea>
+            <center>
+                <p id="storeLog"></p>
+            </center>
+            <textarea id="textarea" hidden=true></textarea>
+            <br>
         </div>
     </body>
 

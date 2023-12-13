@@ -184,6 +184,39 @@
 
             }
 
+            function getBalance(){
+
+                var data;
+       
+                data = {
+                    "arg1": "SO_GetBalance",
+                    "storeID": page_store_id
+                };
+
+                var js = JSON.stringify(data);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+
+                            var body = JSON.parse(computation);
+                            console.log(computation);
+                            document.getElementById("storeBalance").value = body[0].balance;
+                            
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
+
+            }
+
             //Sends data to the database and gets response
             function genStoreInv() {
                 var data;
@@ -235,6 +268,7 @@
 
                             console.log(computation);
                             text.value = computation;
+                            getBalance();
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
                         }
@@ -551,27 +585,13 @@
         </div>
 
         <div class="fixed2" id="div2">
-            <!--
-            <br><br><br>
-            <label>Username</label>
-            <input id="username"  />
-            <label>Password</label>
-            <input id="password"  />
-            <label>Store Name</label>
-            <input id="storeName" /><br>
-            <label>Latitude</label>
-            <input id="latitude"  />
-            <label>Longitude</label>
-            <input id="longitude"/>
-            
-            <input type="button" value="Create Store" onClick="JavaScript:createStoreF(this)">
-            -->
+
             <h1>Store Owner</h1>
             <br>
-            <!--
-            <label>store_ID</label>
-            <input id="store_id"/>
-            -->
+
+            <label>Store Balance</label>
+            <input id="storeBalance"  disabled="true" />
+            <br>
             <input type="button" value="Genorate Store Inv" onClick="JavaScript:genStoreInv()">
             <br>
             <textarea id="textarea" hidden=true></textarea>
