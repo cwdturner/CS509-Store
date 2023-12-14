@@ -4,11 +4,13 @@
 
     <head>
         <script type="text/javascript">
+            const compareMe = [];
+
+
             //asks for the list of stores
             function genSiteMan(e) {
                 var data;
-
-                //var text = document.getElementById("textarea");
+                document.getElementById("errorMess").innerHTML = "";
                 var text = document.getElementById("demo2");
                 var selected = "listStore";
                 console.log(selected);
@@ -60,6 +62,7 @@
 
             //prints complist based on filters and prints buy/compare elements 
             function change_Storeselect(store, pri, ram, sto, gpu, cpu, gen) {
+                document.getElementById("errorMess").innerHTML = "";
                 console.log(store, pri, ram, sto, gpu, cpu, gen)
                 var data;
                 var text = document.getElementById("computerLog");
@@ -84,7 +87,7 @@
                         if (xhr.status == 200) {
                             var js = JSON.parse(xhr.responseText);
                             var computation = js["body"];
-                            console.log("testComp" + computation)
+                            //console.log("testComp" + computation)
                             ///*
                             if (!computation) {//Check if no computers exist for the store
                                 text.value = "No Computers in this store."
@@ -94,17 +97,17 @@
                             }
                             //*/
                             var body = JSON.parse(computation);
-                            console.log(computation);
+                            //console.log(computation);
                             text.value = computation;
                             text.innerHTML = computation;
 
-                            let texttt = "<table>"
-                            texttt += "<tr><th>-</th><th>Name</th><th>Price</th><th>Ram</th><th>Storage</th><th>GPU</th><th>CPU</th><th>Gem</th></tr>";
+                            let texttt = "<table id='compTable'>";
+                            texttt += "<tr><th>-</th><th>Name</th><th>Price</th><th>Ram</th><th>Storage</th><th>GPU</th><th>CPU</th><th>Gen</th></tr>";
                             for (x in body) {
                                 //console.log("id"+body[x].computer_id)
                                 let a = [];
                                 a[x] = body[x].computer_id;
-                                console.log("id" + a[x])
+                                //console.log("id" + a[x])
                                 //<input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
                                 texttt += "<tr><td><input type=checkbox id=" + body[x].computer_id + "></td>";
                                 texttt += "<td>" + body[x].computerName + "</td>" + "<td> $" + body[x].price + " </td>" + "<td> " + body[x].memory + " </td>" + "<td> " + body[x].storage + " </td>" + "<td> " + body[x].graphicsCard + " </td>" + "<td> " + body[x].processor + " </td>" + "<td> " + body[x].generation + " </td>";
@@ -127,43 +130,162 @@
             }
 
             function buyComp(comp_id) {
-                //var x = JSON.stringify(comp_id);
+                document.getElementById("errorMess").innerHTML = "";
+                var long = document.getElementById("Long").value;
+                var lat = document.getElementById("Lat").value;
+                if ((!long) || (!lat)) {
+                    document.getElementById("errorMess").innerHTML = "Enter Lat and Long";
+                    return;
+                }
                 console.log("bought" + comp_id)
+                console.log(lat)
+                console.log(long)
+                var data;
+                //var text = document.getElementById("textarea");
+                //text.value = "";
+                //Check to make sure a store has already been made or an id is provided.
+                /*
+                if(document.getElementById("store_id").value == "" || !document.getElementById("store_id").value){
+                    text.value = "Please first create a store, or enter a store_id."
+                    return false;
+                }*/
+
+                data = { "arg1": "BuyComputer", "comp_id": "46", "buyerLat": "40.7658", "buyerLong": "66.66" }
+                data["comp_id"] = comp_id;
+                data["buyerLat"] = lat;
+                data["buyerLong"] = long;
+
+                var js = JSON.stringify(data);
+                console.log("JS:" + js);
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://fmwsf8r7mk.execute-api.us-east-2.amazonaws.com/Initial/Store", true)  //<--- Address for first question of Homework
+                xhr.send(js); // send the collected data as JSON
+                xhr.onloadend = function () {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var js = JSON.parse(xhr.responseText);
+                            var computation = js["body"];
+                            console.log(computation);
+                            if (computation==undefined){
+                                document.getElementById("errorMess").innerHTML = "Unable to process request. Please Reload";
+                                    return
+                            }
+                            var body = JSON.parse(computation);
+                            //text.value = computation;
+                            texttt= "<hi>YOU BOUGHT:</hi><br><br><br>";
+                            texttt +=body.computerName + "<br><br>Price: $" + body.price + "<br><br>Shipping: $" + body.shipping + "<br><br>Total: $" + body.totalPrice + "<br><br>";
+                            document.getElementById("cart").innerHTML = texttt;
+                            cartOpen();
+                            change_Storeselect();
+                        } else if (xhr.status == 400) {
+                            alert("unable to process request");
+                            
+                        }
+                    } else {
+                        alert("not DONE");
+                    }
+                };
             }
 
-            function compareComp(comp_id) {
-                //var x = JSON.stringify(comp_id);
-                console.log("bought" + comp_id)
+            function compareComp() {
+                document.getElementById("errorMess").innerHTML = "";
+                var tabl = document.getElementById("compTable");
+                var ids = [];
+                var name = [];
+                var price = [];
+                var ram = [];
+                var sto = [];
+                var gpu = [];
+                var cpu = [];
+                var gen = [];
+
+                if (tabl.rows.length < 2) {
+                    return;
+                }
+                console.log(tabl.rows.length)
+
+                for (var i = 1; i < tabl.rows.length; i++) {
+                    if (document.getElementById("compTable").rows[i].cells[0].children[0].checked == true) {
+                        ids.push(document.getElementById("compTable").rows[i].cells[0].children[0].id);
+                        name.push(document.getElementById("compTable").rows[i].cells[1].innerText);
+                        price.push(document.getElementById("compTable").rows[i].cells[2].innerText);
+                        ram.push(document.getElementById("compTable").rows[i].cells[3].innerText);
+                        sto.push(document.getElementById("compTable").rows[i].cells[4].innerText);
+                        gpu.push(document.getElementById("compTable").rows[i].cells[5].innerText);
+                        cpu.push(document.getElementById("compTable").rows[i].cells[6].innerText);
+                        gen.push(document.getElementById("compTable").rows[i].cells[7].innerText);
+                        console.log("hi")
+                    }
+                }
+                if (ids.length < 2) {
+                    document.getElementById("errorMess").innerHTML = "Choose at Least Two to Compare";
+                    return;
+                }
+
+                if (ids) {
+                    let texttt = "<table id='compTable'>";
+                    texttt += "<tr><th>-</th><th>Name</th><th>Price</th><th>Ram</th><th>Storage</th><th>GPU</th><th>CPU</th><th>Gen</th></tr>";
+                    for (x in ids) {
+                        texttt += "<tr><td><input type=checkbox id=" + ids[x] + "></td>";
+                        texttt += "<td>" + name[x] + "</td><td>" + price[x] + "</td><td>" + ram[x] + "</td><td>" + sto[x] + "</td><td>" + gpu[x] + "</td><td>" + cpu[x] + "</td><td>" + gen[x] + "</td>";
+                        texttt += "<td><button onclick=buyComp(" + ids[x] + ")>Buy</button></td></tr>";
+                        console.log(ids[x]);
+                    }
+
+                    texttt += "</table>"
+                    document.getElementById("computerLog").innerHTML = texttt;
+
+                }
+            }
+
+            function cartClose(){
+                document.getElementById("div3").style.display = 'none';
+                document.getElementById("div1").style.display = 'inline-block';
+                document.getElementById("div2").style.display = 'inline-block';
+                return;
+            }
+            function cartOpen(){
+                document.getElementById("div3").style.display = 'inline-block';
+                document.getElementById("div1").style.display = 'none';
+                document.getElementById("div2").style.display = 'none';
+                return;
             }
 
         </script>
     </head>
 
-
     <head>
         <style>
             div.fixed1 {
-
-                
                 text-align: left;
-
-                
             }
         </style>
     </head>
 
-
-
     <head>
         <style>
             div.fixed2 {
-
-
                 overflow-x: hidden;
                 overflow-y: auto;
                 text-align: center;
                 margin: auto;
+            }
+        </style>
+    </head>
 
+    <head>
+        <style>
+            div.fixed3 {
+                height: 300px;
+                width: 200px;
+                position: absolute;
+                left: 50%;
+                margin-left: -100px;
+                top: 50%;
+                margin-top: -150px;
+                background-color: #cae8ca;
+                border: 2px solid #4CAF50;
+                display: none;
 
             }
         </style>
@@ -177,8 +299,6 @@
         </style>
     </head>
 
-
-
     <style>
         select {
             width: 100px;
@@ -191,30 +311,51 @@
     </style>
 
 
+    <body>
+        <div class="fixed3" id="div3">
+            <center>
+                <br>
+                
+                <p id="cart"></p>
+                
+                <button onclick="cartClose()">CLOSE</button>
 
+            </center>
+        </div>
+    </body>
+
+    
     <body onload="genSiteMan()">
 
-        <div class="fixed1">
 
+    
+        <div class="fixed1" id="div1" >
             <br>
             <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISO2.html">
                 <button>Store Owner</button>
             </a>
 
-            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISMLog.html">
+            <a href="https://cs509apitests.s3.us-east-2.amazonaws.com/GUISM.html">
                 <button>Site Manager</button>
             </a>
         </div>
-        <div class="fixed2">
+
+        <div class="fixed2" id="div2">
             <br><br><br><br>
             <header>
                 <h1>Used Computers</h1>
             </header>
 
-
-
             </a>
-            <br><br><br><br>
+            <br><br>
+
+            <center>
+                <p style="color:rgb(219, 26, 0); font-size:20px;" id="errorMess"></p>
+                
+            
+            </center>
+
+            <br><br>
             <!-- <select style="display:inline" id="demo2" onchange="change_Storeselect(this.value)"></select><br>  -->
             <select style="display:inline" id="demo2"></select>
 
@@ -227,32 +368,30 @@
                 <option value="500-">500-</option>
             </select>
 
-
             <select id="ramFilter">
                 <option value="memory">Memory</option>
-                <option value="32+">32+</option>
+                <option value="32+">32GB & More</option>
                 <option value="16GB">16GB</option>
                 <option value="8GB">8GB</option>
-                <option value="4GB">4GB</option>
+                <option value="4GB">4GB & Less</option>
             </select>
 
 
             <select id="stoFilter">
                 <option value="storage">Storage</option>
-                <option value="2TB+">2TB+</option>
+                <option value="2TB">2TB & More</option>
                 <option value="1TB">1TB</option>
                 <option value="512GB">512GB</option>
-                <option value="256orLess">256 or Less</option>
+                <option value="256orLess">256GB & Less</option>
             </select><br>
-
 
             <select id="gpuFilter">
                 <option value="graphicsCard">Graphics</option>
-                <option value="NVIDIA  ">NVIDIA </option>
+                <option value="NVIDIA">NVIDIA </option>
                 <option value="AMD">AMD</option>
                 <option value="INTEL">INTEL</option>
                 <option value="NVIDIA GeForce RTX 4090">NVIDIA GeForce RTX 4090</option>
-                <option value="NVIDIA GeForce RTX 4080”">NVIDIA GeForce RTX 4080”</option>
+                <option value="NVIDIA GeForce RTX 4080">NVIDIA GeForce RTX 4080</option>
                 <option value="AMD Radeon Pro W6300">AMD Radeon Pro W6300</option>
                 <option value="AMD Radeon Pro W6400">AMD Radeon Pro W6400</option>
                 <option value="Intel Integrated Graphics">Intel Integrated Graphics</option>
@@ -260,37 +399,31 @@
                 <option value="Intel UHD Graphics 770">Intel UHD Graphics 770</option>
             </select>
 
-
             <select id="cpuFilter">
                 <option value="processor">Processor</option>
-                <option value="Intel ">Intel </option>
+                <option value="Intel">Intel</option>
                 <option value="AMD">AMD</option>
             </select>
 
-
             <select id="genFilter">
                 <option value="generation">Generation</option>
-                <option value="12th">12th</option>
-                <option value="11th">11th</option>
-                <option value="AMD 7000">AMD 7000</option>
-                <option value="AMD 6000 ">AMD 6000 </option>
+                <option value="13th Gen Intel">13th Gen Intel</option>
+                <option value="12th Gen Intel">12th Gen Intel</option>
+                <option value="11th Gen Intel">11th Gen Intel</option>
+                <option value="AMD Ryzen 7000 Series">AMD Ryzen 7000 Series</option>
+                <option value="AMD Ryzen 6000 Series ">AMD Ryzen 6000 Series </option>
             </select>
 
-
-
-            <button
-                onclick="change_Storeselect(demo2.value,priceFilter.value,ramFilter.value,stoFilter.value,gpuFilter.value,cpuFilter.value,genFilter.value)">Filter</button><br>
+            <button onclick="change_Storeselect(demo2.value,priceFilter.value,ramFilter.value,stoFilter.value,gpuFilter.value,cpuFilter.value,genFilter.value)">Filter</button><br>
             <br><br>
 
             <button onclick="compareComp(this.value)">Compare</button>
             <p style="display:inline">&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;</p>
-            Long: &nbsp; <input id="long" /> &nbsp; Lat: &nbsp; <input id="lat" />
+
+            Long: <input type="text" id="Long">
+            Lat: <input type="text" id="Lat">
+
             <br>
-
-
-
-
-
 
             <style>
                 table,
@@ -299,15 +432,12 @@
                     border: 1px solid #000000;
                     text-align: center;
                     background-color: rgba(255, 255, 255, 0.965);
-
-
                 }
 
                 table {
                     border-collapse: collapse;
                     width: 75%;
                     a: center;
-
                 }
 
                 th,
@@ -319,10 +449,6 @@
             <center>
                 <p id="computerLog"></p>
             </center>
-
-
-
-
 
         </div>
     </body>
