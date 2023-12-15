@@ -289,11 +289,11 @@ let buy_computer = (comp_id, buyer_lat, buyer_long) => {
 				var compPrice = rows[0].price;
 				var storeLat = rows[0].latitude;
 				var storeLong = rows[0].longitude;
-				var shipping = calculateShipping(storeLat, storeLong, buyer_lat, buyer_long);
+				var shipping = calculateShipping(storeLat, storeLong, buyer_lat, buyer_long) * 0.03;
 				shipping = Math.round(shipping*100)/100;
 				var total = shipping + compPrice;
-				var storeCut = total * 0.95;
-				var siteCut = total *0.05;
+				var storeCut = Math.round(total * 0.95 * 100)/100;
+				var siteCut = Math.round(total *0.05 * 100)/100;
 				return resolve(new Promise((resolve, reject) => {
 					pool.query("DELETE FROM Computers WHERE computer_id = ?", [comp_id], (error, rows) => {
 						if (error){
@@ -598,6 +598,7 @@ const response = {
 statusCode: 200,
 body: JSON.stringify(result)
 };
+pool.end();
 return response;
 };
 
