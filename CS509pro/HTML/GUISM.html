@@ -211,7 +211,7 @@
                             var body = JSON.parse(computation);
                             console.log(body);
                             console.log(computation);
-                            document.getElementById("siteBalance").value = body[0].sm_balance;
+                            document.getElementById("siteBalance").value = body[0].sm_balance.toFixed(2);
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
                         }
@@ -251,7 +251,7 @@
                             for (x in body) {
                                 let a = [];
                                 a[x] = body[x].computer_id;
-                                texttt += "<td>" + body[x].storeName + "</td>" + "<td> $" + body[x].Total_Price + " </td>" + "<td> " + body[x].balance + " </td>" + "<td> " + body[x].latitude + " </td>" + "<td> " + body[x].longitude + " </td>";
+                                texttt += "<td>" + body[x].storeName + "</td>" + "<td> $" + body[x].Total_Price + " </td>" + "<td> " + body[x].balance.toFixed(2) + " </td>" + "<td> " + body[x].latitude + " </td>" + "<td> " + body[x].longitude + " </td>";
                                 texttt += "<td><button onclick=removeStoreF(" + body[x].store_id + ")>Remove</button></td></tr>";
                             }
                             texttt += "</table>"
@@ -289,7 +289,8 @@
                             var body = JSON.parse(computation);
                             console.log(body);
                             console.log(computation);
-                            document.getElementById("storebaltextarea").value = computation;
+                            document.getElementById("storebaltextarea").value = computation.toFixed(2);
+                            console.log()
                             
                         } else if (xhr.status == 400) {
                             alert("unable to process request");

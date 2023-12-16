@@ -205,7 +205,7 @@
 
                             var body = JSON.parse(computation);
                             console.log(computation);
-                            document.getElementById("storeBalance").value = body[0].balance;
+                            document.getElementById("storeBalance").value = body[0].balance.toFixed(2);
                             
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
@@ -246,6 +246,7 @@
                             var computation = js["body"];
                             if(!computation){//Check if no computers exist for the store
                                 text.value = "No Computers in this store."
+                                getBalance();
                                 return false;
                             }
                             var body = JSON.parse(computation);
@@ -271,10 +272,13 @@
                             getBalance();
                         } else if (xhr.status == 400) {
                             alert("unable to process request");
+                            getBalance();
                         }
                     } else {
                         alert("not DONE");
+                        getBalance();
                     }
+                    getBalance();
                 };
             }
 
